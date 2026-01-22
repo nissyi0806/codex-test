@@ -3,277 +3,227 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>反射神経ゲーム</title>
+  <title>10秒クリックゲーム</title>
   <style>
     :root {
       color-scheme: light dark;
-      --accent: #3fa9f5;
-      --bg: #f5f7fb;
+      --bg: #f3f4f6;
       --card: #ffffff;
-      --text: #1f2937;
+      --accent: #6366f1;
+      --text: #111827;
       --muted: #6b7280;
     }
 
     body {
       margin: 0;
-      font-family: "Helvetica Neue", Arial, "Hiragino Sans", "Noto Sans JP", sans-serif;
+      font-family: "Hiragino Sans", "Noto Sans JP", "Helvetica Neue", Arial, sans-serif;
       background: var(--bg);
       color: var(--text);
+      min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
       padding: 24px;
     }
 
     .card {
+      width: min(520px, 100%);
       background: var(--card);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-      border-radius: 16px;
-      padding: 24px;
-      width: min(560px, 100%);
+      border-radius: 20px;
+      padding: 28px;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.12);
     }
 
     h1 {
       margin: 0 0 8px;
       font-size: 28px;
-      letter-spacing: 0.01em;
     }
 
-    .description {
-      margin: 0 0 16px;
+    p {
+      margin: 0 0 20px;
       color: var(--muted);
       line-height: 1.6;
+    }
+
+    .status {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .panel {
+      background: rgba(99, 102, 241, 0.08);
+      border-radius: 14px;
+      padding: 14px;
+      text-align: center;
+    }
+
+    .label {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .value {
+      font-size: 24px;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+
+    .target {
+      width: 100%;
+      height: 180px;
+      border-radius: 16px;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      font-size: 22px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 120ms ease, opacity 120ms ease;
+    }
+
+    .target:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .target:active:not(:disabled) {
+      transform: scale(0.98);
     }
 
     .controls {
       display: flex;
       gap: 12px;
-      align-items: center;
-      margin-bottom: 16px;
+      margin-top: 18px;
       flex-wrap: wrap;
     }
 
-    button {
-      appearance: none;
+    .controls button {
       border: none;
       border-radius: 999px;
-      padding: 12px 20px;
-      background: var(--accent);
+      padding: 10px 18px;
+      background: #111827;
       color: #fff;
       font-weight: 700;
       cursor: pointer;
-      box-shadow: 0 10px 20px rgba(63, 169, 245, 0.35);
-      transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
     }
 
-    button:disabled {
-      opacity: 0.6;
+    .controls button:disabled {
+      opacity: 0.4;
       cursor: not-allowed;
-      box-shadow: none;
-    }
-
-    button:not(:disabled):active {
-      transform: translateY(1px);
-      box-shadow: 0 6px 14px rgba(63, 169, 245, 0.3);
-    }
-
-    .status {
-      color: var(--muted);
-      font-weight: 600;
-    }
-
-    .arena {
-      position: relative;
-      height: 260px;
-      background: linear-gradient(135deg, #eef2ff, #e0f7fa);
-      border-radius: 14px;
-      border: 1px dashed rgba(0, 0, 0, 0.1);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      margin-bottom: 18px;
-      user-select: none;
-    }
-
-    .target {
-      width: 140px;
-      height: 140px;
-      border-radius: 24px;
-      background: #7c7f87;
-      display: grid;
-      place-items: center;
-      color: #fff;
-      font-size: 18px;
-      font-weight: 800;
-      transition: background-color 160ms ease, transform 140ms ease;
-      cursor: not-allowed;
-    }
-
-    .target.ready {
-      background: #ff7043;
-      transform: scale(1.02);
-      cursor: not-allowed;
-    }
-
-    .target.active {
-      background: #22c55e;
-      cursor: pointer;
-      box-shadow: 0 18px 36px rgba(34, 197, 94, 0.35);
-    }
-
-    .metrics {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 12px;
-    }
-
-    .metric {
-      background: rgba(255, 255, 255, 0.8);
-      border-radius: 12px;
-      padding: 12px 14px;
-      border: 1px solid rgba(0, 0, 0, 0.05);
-    }
-
-    .metric-title {
-      color: var(--muted);
-      font-size: 13px;
-      letter-spacing: 0.01em;
-    }
-
-    .metric-value {
-      font-size: 22px;
-      font-weight: 700;
-      margin-top: 4px;
     }
   </style>
 </head>
 <body>
   <main class="card">
-    <h1>反射神経ゲーム</h1>
-    <p class="description">
-      「スタート」を押すと 1〜3 秒後にターゲットが緑色になります。<br />
-      緑に変わったらできるだけ早くクリックして、反射速度を測りましょう。
-    </p>
+    <h1>10秒クリックゲーム</h1>
+    <p>スタート後の10秒間で、中央のボタンをできるだけたくさんクリックしよう！</p>
+
+    <div class="status">
+      <div class="panel">
+        <div class="label">スコア</div>
+        <div class="value" id="score">0</div>
+      </div>
+      <div class="panel">
+        <div class="label">残り時間</div>
+        <div class="value" id="time">10.0</div>
+      </div>
+      <div class="panel">
+        <div class="label">ハイスコア</div>
+        <div class="value" id="best">0</div>
+      </div>
+    </div>
+
+    <button class="target" id="target" disabled>スタートを押してね</button>
 
     <div class="controls">
       <button id="start">スタート</button>
-      <span class="status" id="status">準備中…</span>
-    </div>
-
-    <div class="arena">
-      <div class="target" id="target" aria-live="polite" role="button">
-        待機中
-      </div>
-    </div>
-
-    <div class="metrics">
-      <div class="metric">
-        <div class="metric-title">今回の記録</div>
-        <div class="metric-value" id="last-time">-</div>
-      </div>
-      <div class="metric">
-        <div class="metric-title">ベスト</div>
-        <div class="metric-value" id="best-time">-</div>
-      </div>
-      <div class="metric">
-        <div class="metric-title">平均 (5回)</div>
-        <div class="metric-value" id="avg-time">-</div>
-      </div>
+      <button id="reset">リセット</button>
     </div>
   </main>
 
   <script>
+    const scoreLabel = document.getElementById("score");
+    const timeLabel = document.getElementById("time");
+    const bestLabel = document.getElementById("best");
+    const targetButton = document.getElementById("target");
     const startButton = document.getElementById("start");
-    const target = document.getElementById("target");
-    const statusLabel = document.getElementById("status");
-    const lastLabel = document.getElementById("last-time");
-    const bestLabel = document.getElementById("best-time");
-    const avgLabel = document.getElementById("avg-time");
+    const resetButton = document.getElementById("reset");
 
-    let startTime = 0;
-    let timeoutId = null;
-    const history = [];
+    let score = 0;
+    let best = 0;
+    let timeLeft = 10.0;
+    let timerId = null;
+    let running = false;
 
-    const format = (ms) => `${ms.toFixed(0)} ms`;
-
-    const resetTarget = () => {
-      target.classList.remove("active", "ready");
-      target.textContent = "待機中";
-      target.setAttribute("aria-disabled", "true");
-      target.style.pointerEvents = "auto";
+    const updateDisplay = () => {
+      scoreLabel.textContent = score;
+      timeLabel.textContent = timeLeft.toFixed(1);
+      bestLabel.textContent = best;
     };
 
-    const setWaiting = () => {
-      statusLabel.textContent = "ランダムなタイミングを待っています…";
-      target.classList.add("ready");
-      target.textContent = "準備";
-    };
-
-    const setActive = () => {
-      statusLabel.textContent = "クリック！";
-      target.classList.remove("ready");
-      target.classList.add("active");
-      target.textContent = "いまだ！";
-      target.removeAttribute("aria-disabled");
-      startTime = performance.now();
-    };
-
-    const updateMetrics = () => {
-      if (!history.length) return;
-      const last = history[history.length - 1];
-      const best = Math.min(...history);
-      const recent = history.slice(-5);
-      const avg = recent.reduce((sum, v) => sum + v, 0) / recent.length;
-
-      lastLabel.textContent = format(last);
-      bestLabel.textContent = format(best);
-      avgLabel.textContent = format(avg);
-    };
-
-    const queueActivation = () => {
-      const delay = 1000 + Math.random() * 2000;
-      timeoutId = window.setTimeout(() => {
-        setActive();
-      }, delay);
-    };
-
-    const cancelQueue = () => {
-      if (timeoutId !== null) {
-        window.clearTimeout(timeoutId);
-        timeoutId = null;
+    const resetGame = () => {
+      score = 0;
+      timeLeft = 10.0;
+      running = false;
+      targetButton.disabled = true;
+      targetButton.textContent = "スタートを押してね";
+      startButton.disabled = false;
+      if (timerId !== null) {
+        clearInterval(timerId);
+        timerId = null;
       }
+      updateDisplay();
     };
 
-    startButton.addEventListener("click", () => {
-      cancelQueue();
-      resetTarget();
-      setWaiting();
+    const finishGame = () => {
+      running = false;
+      targetButton.disabled = true;
+      startButton.disabled = false;
+      if (score > best) {
+        best = score;
+      }
+      targetButton.textContent = "終了！もう一度？";
+      updateDisplay();
+    };
+
+    const startGame = () => {
+      if (running) return;
+      running = true;
+      score = 0;
+      timeLeft = 10.0;
+      targetButton.disabled = false;
+      targetButton.textContent = "クリック！";
       startButton.disabled = true;
-      queueActivation();
-    });
+      updateDisplay();
 
-    target.addEventListener("click", () => {
-      if (target.classList.contains("active")) {
-        const reaction = performance.now() - startTime;
-        history.push(reaction);
-        statusLabel.textContent = "お見事！もう一度挑戦してね";
-        target.textContent = format(reaction);
-        target.classList.remove("active");
-        startButton.disabled = false;
-        updateMetrics();
-      } else if (target.classList.contains("ready")) {
-        statusLabel.textContent = "まだだよ！スタートからやり直し";
-        target.textContent = "フライング";
-        target.classList.remove("ready");
-        cancelQueue();
-        startButton.disabled = false;
+      if (timerId !== null) {
+        clearInterval(timerId);
       }
+
+      timerId = setInterval(() => {
+        timeLeft = Math.max(0, timeLeft - 0.1);
+        if (timeLeft <= 0) {
+          clearInterval(timerId);
+          timerId = null;
+          finishGame();
+          return;
+        }
+        updateDisplay();
+      }, 100);
+    };
+
+    targetButton.addEventListener("click", () => {
+      if (!running) return;
+      score += 1;
+      scoreLabel.textContent = score;
     });
 
-    resetTarget();
-    statusLabel.textContent = "スタートを押してね";
+    startButton.addEventListener("click", startGame);
+    resetButton.addEventListener("click", resetGame);
+
+    resetGame();
   </script>
 </body>
 </html>
